@@ -1,8 +1,8 @@
 use actix_web::{ post, web, App, HttpServer, HttpResponse};
-use sea_orm::{ Database, DatabaseConnection};
+use sea_orm::{ sea_query::func, Database, DatabaseConnection};
 use dotenv::dotenv;
 // use std::env;
-use std::{sync::Arc, env};
+use std::{env, sync::Arc};
 
 mod migrator;
 type DbPool = Arc<DatabaseConnection>; // Type alias for the database connection
@@ -23,7 +23,7 @@ async fn create_user(db: web::Data<DbPool>, new_user: web::Json<handlers::user_h
 #[actix_web::main]
 // #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    
+
     dotenv().ok(); // Load environment variables from .env file
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     // Create a connection pool
@@ -42,5 +42,10 @@ async fn main() -> std::io::Result<()> {
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
+
+    
 }
+
+
+
 
