@@ -13,6 +13,7 @@ serde = "1.0.215"
 serde_derive = "1.0.215"
 dotenv = "0.15"
 bcrypt = "0.16.0"
+jsonwebtoken = "9.3.0"
 [dependencies.sea-orm-migration]
 version = "1.1.0"
 features = [

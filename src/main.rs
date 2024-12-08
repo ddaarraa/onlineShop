@@ -1,6 +1,7 @@
 use actix_web::{ post, web, App, HttpServer, HttpResponse};
 use sea_orm::{ sea_query::func, Database, DatabaseConnection};
 use dotenv::dotenv;
+use serde::Deserialize;
 // use std::env;
 use std::{env, sync::Arc};
 
@@ -18,6 +19,21 @@ async fn create_user(db: web::Data<DbPool>, new_user: web::Json<handlers::user_h
         Ok(_) => HttpResponse::Created().finish(),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
+}
+
+#[post("/login")]
+async fn login_user(db: web::Data<DbPool>, login_info: web::Json<LoginInfo>) -> HttpResponse {
+    match handlers::user_handler::login_user(&db, login_info.username.clone(), login_info.password.clone()).await {
+        Ok(token) => HttpResponse::Ok().json(token), // Return the JWT token
+        Err(_) => HttpResponse::Unauthorized().finish(), // Return 401 if login fails
+    }
+}
+
+// Define a struct for login information
+#[derive(Deserialize)]
+struct LoginInfo {
+    username: String,
+    password: String,
 }
 
 #[actix_web::main]
@@ -38,6 +54,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(db.clone())) // Share the database connection pool
             .service(create_user)
+            .service(login_user)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
