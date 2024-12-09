@@ -1,11 +1,14 @@
 use sea_orm::{sqlx::types::chrono, ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, Set};
 use crate::{entities, DbPool}; // Import your entities module
 use serde::Deserialize; // Import Deserialize trait
-use bcrypt::{hash, DEFAULT_COST}; // Add this import
-use jsonwebtoken::{encode, EncodingKey, Header, Algorithm}; // Import JWT encoding
+use bcrypt::{hash, DEFAULT_COST};
+use jwt::{SignWithKey, Header}; // Import JWT encoding
 use serde::Serialize; // Import Serialize and Deserialize traits
 // use crate::entities::user::Model; // Import the user model
 use std::env; // Import env for accessing environment variables
+use std::collections::BTreeMap;
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
 
 #[derive(Deserialize)] // Derive Deserialize for NewUser
 pub struct NewUser {
@@ -56,11 +59,13 @@ pub async fn login_user(db: &DbPool, username: String, password: String) -> Resu
 
         // Get the secret key from the environment variable
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-        // println!("JWT_SECRET: {}", secret_key); // Debug print
-        // Generate JWT
-        let header = Header::new(Algorithm::HS256);
-        let token = encode(&header, &claims, &EncodingKey::from_secret(secret_key.as_ref()))
-            .map_err(|e| DbErr::Custom(format!("Failed to generate JWT: {:?}", e)))?;
+        let key: Hmac<Sha256> = Hmac::new_from_slice(secret_key.as_bytes()).expect("Invalid key length");
+
+        let mut claims_map = BTreeMap::new();
+        claims_map.insert("sub", claims.sub);
+        claims_map.insert("exp", claims.exp.to_string());
+
+        let token = claims_map.sign_with_key(&key).expect("Failed to sign token");
         Ok(token)
     } else {
         Err(DbErr::Custom("Invalid password".into()))
