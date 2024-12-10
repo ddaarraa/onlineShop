@@ -49,7 +49,7 @@ pub async fn insert_user(db: &DbPool, new_user: models::user::User) -> Result<Ht
 }
 
 
-pub async fn login_user(db: &DbPool, username: &str, password: &str) -> HttpResponse {
+pub async fn login_user(db: &DbPool, username: &str, password: &str) -> Result<HttpResponse, models::user::LoginUserError> {
     // Fetch the user from the database
     let user = entities::user::Entity::find()
         .filter(entities::user::Column::Username.eq(username))
@@ -58,31 +58,38 @@ pub async fn login_user(db: &DbPool, username: &str, password: &str) -> HttpResp
 
     match user {
         Ok(Some(user)) => {
+
             // Verify the password
             if user.verify_password(password) {
-                // Create JWT claims
-                let claims = Claims {
-                    sub: user.username.clone(),
-                    exp: (chrono::Utc::now().timestamp() + 3600) as usize, // 1 hour expiration
-                };
-                // Get the secret key from the environment variable
-                let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-                let key: Hmac<Sha256> = Hmac::new_from_slice(secret_key.as_bytes()).expect("Invalid key length");
+                let token_generator = move || -> String {
+                    
+                    let claims = Claims {
+                        sub: user.username.clone(),
+                        exp: (chrono::Utc::now().timestamp() + 3600) as usize, // 1 hour expiration
+                    };
 
-                let mut claims_map = BTreeMap::new();
-                claims_map.insert("sub", claims.sub);
-                claims_map.insert("exp", claims.exp.to_string());
-                let token = claims_map.sign_with_key(&key).expect("Failed to sign token");
+                    let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+                    let key: Hmac<Sha256> = Hmac::new_from_slice(secret_key.as_bytes()).expect("Invalid key length");
+
+                    let mut claims_map = BTreeMap::new();
+                    claims_map.insert("sub", claims.sub);
+                    claims_map.insert("exp", claims.exp.to_string());
+
+                    return claims_map.sign_with_key(&key).expect("Failed to sign token");
+                };
+                
+                let token = token_generator();
+
                 let response = Response{
                     token : token.to_string(),
                     body : "login successfully".to_string()
                 };
-                return HttpResponse::Ok().json(response); // Return the token in the response
+                return Ok(HttpResponse::Ok().json(response));
+            }else{
+                return Err(models::user::LoginUserError::InvalidPassword);
             }
         }
-        Ok(None) => return HttpResponse::Unauthorized().body("User not found"),
-        Err(_) => return HttpResponse::InternalServerError().body("Database error"),
+        Ok(None) => return Err(models::user::LoginUserError::UserNotFound),
+        Err(_) => return Err(models::user::LoginUserError::InternalError),
     }
-
-    HttpResponse::Unauthorized().body("Invalid password") // Return Unauthorized if login fails
 }

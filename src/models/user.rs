@@ -41,8 +41,8 @@ pub enum LoginUserError {
     UserNotFound,
     #[display("Invalid password")]
     InvalidPassword,
-    #[display("Database error")]
-    DatabaseError,
+    #[display("Internal error")]
+    InternalError,
 }
 
 impl error::ResponseError for LoginUserError {
@@ -56,7 +56,7 @@ impl error::ResponseError for LoginUserError {
         match *self {
             LoginUserError::UserNotFound => actix_web::http::StatusCode::UNAUTHORIZED,
             LoginUserError::InvalidPassword => actix_web::http::StatusCode::UNAUTHORIZED,
-            LoginUserError::DatabaseError => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
+            LoginUserError::InternalError => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
