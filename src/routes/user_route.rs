@@ -8,7 +8,7 @@ use std::sync::Arc;
 type DbPool = Arc<DatabaseConnection>;
 
 
-#[post("/users")]
+#[post("/register")]
 pub async fn create_user(db: web::Data<DbPool>, new_user: web::Json<models::user::User>) -> Result<HttpResponse , InsertUserError> {
     match handlers::user_handler::insert_user(&db, new_user.into_inner()).await {
         Ok(response) => Ok(response), // Return the successful response

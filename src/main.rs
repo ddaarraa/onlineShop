@@ -1,4 +1,4 @@
-use actix_web::{ web, App, HttpServer};
+use actix_web::{ middleware::{self, Logger}, web, App, HttpServer};
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
@@ -8,6 +8,9 @@ mod handlers;
 mod db;
 mod routes;
 mod models;
+mod middlewares;
+
+use middlewares::auth::auth;
 
 type DbPool = Arc<DatabaseConnection>; 
 
@@ -20,10 +23,14 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(db.clone())) // Share the database connection pool
+            .app_data(web::Data::new(db.clone()))
             .service(routes::user_route::create_user)
             .service(routes::user_route::login_user)
-            .service(routes::product_routes::get_all_product)
+            .service(
+                web::scope("/products")
+                .service(routes::product_routes::get_all_product)
+                .wrap(middleware::from_fn(auth))
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
