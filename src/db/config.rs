@@ -1,7 +1,8 @@
 use sea_orm::DbErr;
 use sea_orm_migration::{MigratorTrait, SchemaManager};
-
+use sea_orm::{Database, DatabaseConnection};
 use crate::{migrator, DbPool};
+use std::{env, sync::Arc};
 
 
 pub async fn run(db: &DbPool) -> Result<(), DbErr> {
@@ -13,4 +14,8 @@ pub async fn run(db: &DbPool) -> Result<(), DbErr> {
     // assert!(schema_manager.has_table("chef").await?);
 
     Ok(())
+}
+pub async fn database_connection() -> Arc<DatabaseConnection> {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    Arc::new(Database::connect(&database_url).await.expect("Failed to connect to the database"))
 }

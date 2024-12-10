@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, env};
 
-use actix_web::{web, HttpResponse, Error};
+use actix_web::{HttpResponse};
 use hmac::{Hmac, Mac};
 use jwt::VerifyWithKey;
 // use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
@@ -54,6 +54,7 @@ pub async fn get_product(db: &DbPool, product_id: i32, token: Option<String>) ->
                         println!("Token is still valid.");
                     } else {
                         println!("Token has expired.");
+                        return Err(HttpResponse::Unauthorized().body("Expired token"));
                     }
                 } else {
                     println!("Invalid 'exp' format.");

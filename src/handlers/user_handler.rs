@@ -41,7 +41,7 @@ struct Claims {
     exp: usize,  // Expiration time
 }
 
-pub async fn login_user(db: &DbPool, username: String, password: String) -> Result<String, DbErr> {
+pub async fn login_user(db: &DbPool, username: &String, password: &String) -> Result<String, DbErr> {
     // Fetch the user from the database
     let user = entities::user::Entity::find()
         .filter(entities::user::Column::Username.eq(username))
