@@ -1,22 +1,20 @@
 use sea_orm::{sqlx::types::chrono, ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, Set};
 use crate::{entities, DbPool}; // Import your entities module
-use serde::Deserialize; // Import Deserialize trait
 use bcrypt::{hash, DEFAULT_COST};
-use jwt::{SignWithKey, Header}; // Import JWT encoding
+use jwt::SignWithKey; // Import JWT encoding
 use serde::Serialize; // Import Serialize and Deserialize traits
-// use crate::entities::user::Model; // Import the user model
 use std::env; // Import env for accessing environment variables
 use std::collections::BTreeMap;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-
-#[derive(Deserialize)] // Derive Deserialize for NewUser
-pub struct NewUser {
-    pub username: String,
-    pub password: String,
+use crate::models;
+#[derive(Serialize)]
+struct Claims {
+    sub: String, // Subject (user ID or username)
+    exp: usize,  // Expiration time
 }
 
-pub async fn insert_user(db: &DbPool, new_user: NewUser) -> Result<(), DbErr> {
+pub async fn insert_user(db: &DbPool, new_user: models::user::User) -> Result<(), DbErr> {
     // Hash the password
     let hashed_password = hash(new_user.password, DEFAULT_COST).expect("Failed to hash password");
 
@@ -35,11 +33,7 @@ pub async fn insert_user(db: &DbPool, new_user: NewUser) -> Result<(), DbErr> {
 //     verify(password, stored_hash).unwrap_or(false)
 // }
 
-#[derive(Serialize)]
-struct Claims {
-    sub: String, // Subject (user ID or username)
-    exp: usize,  // Expiration time
-}
+
 
 pub async fn login_user(db: &DbPool, username: &String, password: &String) -> Result<String, DbErr> {
     // Fetch the user from the database

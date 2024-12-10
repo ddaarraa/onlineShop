@@ -7,6 +7,7 @@ mod entities;
 mod handlers;
 mod db;
 mod routes;
+mod models;
 
 type DbPool = Arc<DatabaseConnection>; 
 

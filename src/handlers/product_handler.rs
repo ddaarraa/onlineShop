@@ -1,14 +1,13 @@
 use std::{collections::BTreeMap, env};
 
-use actix_web::{HttpResponse};
+use actix_web::HttpResponse;
 use hmac::{Hmac, Mac};
 use jwt::VerifyWithKey;
-// use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use sea_orm::{sqlx::types::chrono, ColumnTrait, EntityTrait, QueryFilter};
 use sha2::Sha256;
-use crate::entities::product; // Import the product entity
-use crate::DbPool; // Import the DbPool type
-use serde::{Deserialize, Serialize}; // Import for JWT claims
+use crate::entities::product; 
+use crate::DbPool; 
+use serde::{Deserialize, Serialize}; 
 
 // Define the claims structure
 #[derive(Debug, Deserialize, Serialize)]
@@ -18,7 +17,7 @@ struct Claims {
 }
 
 // Function to get a product by ID with JWT authorization
-pub async fn get_product(db: &DbPool, product_id: i32, token: Option<String>) -> Result<HttpResponse, HttpResponse> {
+pub async fn get_all_product(db: &DbPool, product_id: i32, token: Option<String>) -> Result<HttpResponse, HttpResponse> {
     // Check for the token
     let token = token.ok_or(HttpResponse::Unauthorized())?;
     // let trimmed_token = token.trim();
