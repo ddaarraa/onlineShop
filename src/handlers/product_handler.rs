@@ -13,7 +13,7 @@ struct Claims {
 }
 
 // Function to get a product by ID with JWT authorization
-pub async fn get_product(db: &DbPool, product_id: i32) -> Result<HttpResponse, models::product::getProductError> {
+pub async fn get_product(db: &DbPool, product_id: i32) -> Result<HttpResponse, models::product::GetProductError> {
     // Fetch the product from the database
     let product = product::Entity::find()
         .filter(product::Column::Id.eq(product_id)) // Filter by product ID
@@ -25,10 +25,10 @@ pub async fn get_product(db: &DbPool, product_id: i32) -> Result<HttpResponse, m
             return Ok(HttpResponse::Ok().json(product))
         }
         Ok(None) => { 
-            return Err(models::product::getProductError::ProductNotFound);
+            return Err(models::product::GetProductError::ProductNotFound);
         }
         Err(_) => {
-            return Err(models::product::getProductError::DatabaseError);
+            return Err(models::product::GetProductError::DatabaseError);
         }
     }
     

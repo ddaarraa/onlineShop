@@ -1751,6 +1751,7 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_derive",
+ "serde_json",
  "sha2",
  "tokio",
  "tokio-postgres",

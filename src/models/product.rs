@@ -18,14 +18,14 @@ pub struct ProductId {
 
 
 #[derive(Debug, Display)]
-pub enum getProductError {
+pub enum GetProductError {
     #[display("product not found")]
     ProductNotFound,
     #[display("Database error")]
     DatabaseError,
 }
 
-impl error::ResponseError for getProductError {
+impl error::ResponseError for GetProductError {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
             .content_type("text/html")
@@ -34,8 +34,8 @@ impl error::ResponseError for getProductError {
 
     fn status_code(&self) -> actix_web::http::StatusCode {
         match *self {
-            getProductError::ProductNotFound { .. } => actix_web::http::StatusCode::BAD_REQUEST,
-            getProductError::DatabaseError => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
+            GetProductError::ProductNotFound { .. } => actix_web::http::StatusCode::BAD_REQUEST,
+            GetProductError::DatabaseError => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

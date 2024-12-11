@@ -1,4 +1,4 @@
-use actix_web::{ middleware::{self}, web, App, HttpServer};
+use actix_web::{ middleware::{self}, web::{self}, App, HttpServer};
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ mod db;
 mod routes;
 mod models;
 mod middlewares;
-
+mod errors;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -29,7 +29,7 @@ async fn main() -> std::io::Result<()> {
                 .service(routes::product_routes::get_all_product)
             )
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", 8081))?
     .run()
     .await
 }
