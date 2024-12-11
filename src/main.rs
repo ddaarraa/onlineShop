@@ -1,4 +1,4 @@
-use actix_web::{ middleware::{self, Logger}, web, App, HttpServer};
+use actix_web::{ middleware::{self}, web, App, HttpServer};
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
@@ -10,9 +10,6 @@ mod routes;
 mod models;
 mod middlewares;
 
-use middlewares::auth::auth;
-
-type DbPool = Arc<DatabaseConnection>; 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -28,15 +25,16 @@ async fn main() -> std::io::Result<()> {
             .service(routes::user_route::login_user)
             .service(
                 web::scope("/products")
+                .wrap(middleware::from_fn(middlewares::auth::auth))
                 .service(routes::product_routes::get_all_product)
-                .wrap(middleware::from_fn(auth))
             )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
-
 }
+
+type DbPool = Arc<DatabaseConnection>; 
 
 
 

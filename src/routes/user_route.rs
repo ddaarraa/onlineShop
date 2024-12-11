@@ -1,5 +1,5 @@
 
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{post, web, HttpResponse};
 use sea_orm::DatabaseConnection;
 use crate::{handlers,models::{self, user::{InsertUserError, LoginUserError}}};
 use std::sync::Arc;
