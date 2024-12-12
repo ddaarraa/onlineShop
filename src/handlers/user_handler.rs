@@ -1,12 +1,14 @@
 use sea_orm::{sqlx::types::chrono, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use actix_web::HttpResponse;
-use crate::{entities, errors::api_error::ApiError, models, DbPool, config}; // Import your entities module
+use validator::Validate;
+use crate::{entities, errors::api_error::{ApiError, ValidationFieldError}, models, DbPool, config}; // Import your entities module
 use bcrypt::{hash, DEFAULT_COST};
 use jwt::SignWithKey; // Import JWT encoding
 use serde::Serialize; // Import Serialize and Deserialize traits
 use std::collections::BTreeMap;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
+// use validator::Validate;ds
 
 #[derive(Serialize)]
 struct Claims {
@@ -21,12 +23,33 @@ struct Response {
 
 pub async fn insert_user(db: &DbPool, new_user: models::user::User) -> Result<HttpResponse, ApiError > {
     
-    if new_user.username.is_empty() {
-        return Err(ApiError::ValidationError { field: "username".to_string() });
+    if let Err(validation_errors) = new_user.validate() {
+        // Collect the validation errors into a vector of `ValidationFieldError`
+        let error_details: Vec<ValidationFieldError> = validation_errors.field_errors()
+            .into_iter()
+            .flat_map(|(field, errors)| {
+                errors.iter().filter_map(|error| {
+                    // Handle Option<Cow<'_, str>> properly
+                    error.message.clone().map_or_else(
+                        || Some(ValidationFieldError {
+                            field: field.to_string(),
+                            message: "Unknown error".to_string(),
+                        }),
+                        |message| Some(ValidationFieldError {
+                            field: field.to_string(),
+                            message: message.to_string(),
+                        }),
+                    )
+                })
+            })
+            .collect();
+    
+        // If validation failed, return a clean error response
+        return Err(ApiError::ValidationError {
+            details: error_details,
+        });
     }
-    if new_user.password.is_empty() {
-        return Err(ApiError::ValidationError { field: "password".to_string() });
-    }
+    
 
     let clone_user_name = new_user.username.clone();
 
@@ -50,6 +73,36 @@ pub async fn insert_user(db: &DbPool, new_user: models::user::User) -> Result<Ht
 
 
 pub async fn login_user(db: &DbPool, username: &str, password: &str) -> Result<HttpResponse, ApiError> {
+    let new_user = models::user::User  {
+        username : username.to_string(),
+        password : password.to_string()
+    };
+    if let Err(validation_errors) = new_user.validate() {
+        // Collect the validation errors into a vector of `ValidationFieldError`
+        let error_details: Vec<ValidationFieldError> = validation_errors.field_errors()
+            .into_iter()
+            .flat_map(|(field, errors)| {
+                errors.iter().filter_map(|error| {
+                    // Handle Option<Cow<'_, str>> properly
+                    error.message.clone().map_or_else(
+                        || Some(ValidationFieldError {
+                            field: field.to_string(),
+                            message: "Unknown error".to_string(),
+                        }),
+                        |message| Some(ValidationFieldError {
+                            field: field.to_string(),
+                            message: message.to_string(),
+                        }),
+                    )
+                })
+            })
+            .collect();
+    
+        // If validation failed, return a clean error response
+        return Err(ApiError::ValidationError {
+            details: error_details,
+        });
+    }
     // Fetch the user from the database
     let user = entities::user::Entity::find()
         .filter(entities::user::Column::Username.eq(username))
