@@ -1,3 +1,4 @@
+// use sea_orm::sqlx::database;
 // use sea_orm::DbErr;
 // use sea_orm_migration::{MigratorTrait, SchemaManager};
 use sea_orm::{Database, DatabaseConnection};
@@ -19,15 +20,15 @@ use std::error::Error;
 // }
 pub async fn database_connection() -> Result<Arc<DatabaseConnection>, Box<dyn Error>> {
 
-    let env_config = config::env_config::get_env_config();
-    let config_guard = env_config.lock().unwrap();
+    let database_url = config::env_config::get_database_url_from_config();
    
-    let database_url = config_guard.database_url.clone()
-        .ok_or("DATABASE_URL is not set in the environment")?;
-
+    let database_url = match database_url {
+        Ok(database_url) => { database_url },
+        Err(err) => {err.to_string()},
+    };
     // print!("database url : {}",database_url);
     let connection = Database::connect(&database_url).await?;
     Ok(Arc::new(connection))
-
+    
 }
 

@@ -81,8 +81,8 @@ pub enum ApiError {
     #[display("Object not found")]
     ObjectNotFoundError,
     
-    #[display("Application logic error: {detail}")]
-    LogicError{detail: String},
+    // #[display("Application logic error: {detail}")]
+    // LogicError{detail: String},
     
     #[display("Internal server error: {detail}")]
     InternalServerError{detail: String},
@@ -101,7 +101,7 @@ impl error::ResponseError for ApiError {
             ApiError::DatabaseError{..} => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::ObjectNotFoundError => StatusCode::NOT_FOUND,
             ApiError::AuthError{..} => StatusCode::UNAUTHORIZED,
-            ApiError::LogicError{..} => StatusCode::BAD_REQUEST,
+            // ApiError::LogicError{..} => StatusCode::BAD_REQUEST,
             ApiError::InternalServerError{..} => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
