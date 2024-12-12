@@ -1,10 +1,9 @@
 use sea_orm::{sqlx::types::chrono, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use actix_web::HttpResponse;
-use crate::{entities, errors::api_error::ApiError, models, DbPool}; // Import your entities module
+use crate::{entities, errors::api_error::ApiError, models, DbPool, config}; // Import your entities module
 use bcrypt::{hash, DEFAULT_COST};
 use jwt::SignWithKey; // Import JWT encoding
 use serde::Serialize; // Import Serialize and Deserialize traits
-use std::env; // Import env for accessing environment variables
 use std::collections::BTreeMap;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
@@ -59,34 +58,46 @@ pub async fn login_user(db: &DbPool, username: &str, password: &str) -> Result<H
 
     match user {
         Ok(Some(user)) => {
-
             // Verify the password
             if user.verify_password(password) {
                 
-                let token_generator = move || -> String {
+                let token_generator = move || -> Result<String, ApiError> {
                     
                     let claims = Claims {
                         sub: user.username.clone(),
                         exp: (chrono::Utc::now().timestamp() + 3600) as usize, // 1 hour expiration
                     };
 
-                    let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-                    let key: Hmac<Sha256> = Hmac::new_from_slice(secret_key.as_bytes()).expect("Invalid key length");
+                    let secret_key = config::env_config::get_jwt_secret_from_config();
+
+                    let secret_key = match secret_key {
+                        Ok(secret_key) => secret_key,
+                        Err(err) => return Err(ApiError::InternalServerError { detail: err.to_string()})
+                    };
+                    
+                    let key = Hmac::<Sha256>::new_from_slice(secret_key.as_bytes())
+                        .map_err(|_| ApiError::InternalServerError { detail: "Invalid key length for HMAC initialization".to_string() })?;
 
                     let mut claims_map = BTreeMap::new();
                     claims_map.insert("sub", claims.sub);
                     claims_map.insert("exp", claims.exp.to_string());
 
-                    return claims_map.sign_with_key(&key).expect("Failed to sign token");
+                    claims_map
+                        .sign_with_key(&key)
+                        .map_err(|_| ApiError::InternalServerError { detail: "Failed to sign token".to_string() })
                 };
                 
-                let token = token_generator();
-
-                let response = Response{
-                    token : token.to_string(),
-                    body : "login successfully".to_string()
-                };
-                return Ok(HttpResponse::Ok().json(response));
+                match token_generator() {
+                    Ok(token) => {
+                        let response = Response {
+                            token: token.to_string(),
+                            body: "login successfully".to_string(),
+                        };
+                        Ok(HttpResponse::Ok().json(response))
+                    }
+                    Err(err) => Err(err),
+                }
+                
             }else{
                 return Err(ApiError::AuthError { detail: "InvalidPassword".to_string()});
             }

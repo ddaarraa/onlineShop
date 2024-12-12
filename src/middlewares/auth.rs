@@ -11,7 +11,7 @@ use jwt::VerifyWithKey;
 use sea_orm::sqlx::types::chrono;
 use sha2::Sha256;
 use std::collections::BTreeMap;
-use std::env;
+use crate::config;
 
 pub async fn auth(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<ServiceResponse<impl MessageBody>, Error> {
     // Extract the Authorization header
@@ -22,7 +22,12 @@ pub async fn auth(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<S
 
     if let Some(token) = token {
         // Verify the token
-        let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+        let secret_key = config::env_config::get_jwt_secret_from_config();
+
+        let secret_key = match secret_key {
+            Ok(secret_key) => secret_key,
+            Err(_) => return Err(AuthError::InternalError.into())
+        };
         let key: Hmac<Sha256> = Hmac::new_from_slice(secret_key.as_bytes()).expect("Invalid key length");
 
         // Verify the token and extract claims

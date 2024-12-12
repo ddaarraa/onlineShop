@@ -1,8 +1,10 @@
 // use sea_orm::DbErr;
-use sea_orm_migration::{MigratorTrait, SchemaManager};
+// use sea_orm_migration::{MigratorTrait, SchemaManager};
 use sea_orm::{Database, DatabaseConnection};
-use crate::{migrator, DbPool};
-use std::{env, sync::Arc};
+// use crate::{migrator, DbPool};
+use crate::config;
+use std::sync::Arc;
+use std::error::Error;
 
 
 // pub async fn run(db: &DbPool) -> Result<(), DbErr> {
@@ -15,7 +17,17 @@ use std::{env, sync::Arc};
 
 //     Ok(())
 // }
-pub async fn database_connection() -> Arc<DatabaseConnection> {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    Arc::new(Database::connect(&database_url).await.expect("Failed to connect to the database"))
+pub async fn database_connection() -> Result<Arc<DatabaseConnection>, Box<dyn Error>> {
+
+    let env_config = config::env_config::get_env_config();
+    let config_guard = env_config.lock().unwrap();
+   
+    let database_url = config_guard.database_url.clone()
+        .ok_or("DATABASE_URL is not set in the environment")?;
+
+    // print!("database url : {}",database_url);
+    let connection = Database::connect(&database_url).await?;
+    Ok(Arc::new(connection))
+
 }
+
