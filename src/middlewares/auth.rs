@@ -4,14 +4,12 @@ use actix_web::{
     middleware::Next,
     Error,
 };
-use actix_web::{HttpResponse, error};
-use derive_more::Display;
 use hmac::{Hmac, Mac};
 use jwt::VerifyWithKey;
 use sea_orm::sqlx::types::chrono;
 use sha2::Sha256;
 use std::collections::BTreeMap;
-use crate::config;
+use crate::{config, middlewares::error::AuthError};
 
 pub async fn auth(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<ServiceResponse<impl MessageBody>, Error> {
     // Extract the Authorization header
@@ -41,7 +39,7 @@ pub async fn auth(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<S
                     if let Ok(exp_time) = exp.parse::<u64>() {
                         let now = chrono::Utc::now().timestamp() as u64;
                         if exp_time > now {
-                            next.call(req).await
+                            next.call(req).await 
                         } else {
                             return Err(AuthError::ExpiredToken.into());
                         }
@@ -65,31 +63,3 @@ pub async fn auth(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<S
 
 
 
-#[derive(Debug, Display)]
-pub enum AuthError {
-    #[display("Missing token")]
-    MissingToken,
-    #[display("Expired token")]
-    ExpiredToken,
-    #[display("Failed to verify token")]
-    TokenVerificationFailed,
-    #[display("Internal Error")]
-    InternalError,
-}
-
-impl error::ResponseError for AuthError {
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code())
-            .content_type("text/html")
-            .body(self.to_string())
-    }
-
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        match *self {
-            AuthError::MissingToken => actix_web::http::StatusCode::UNAUTHORIZED,
-            AuthError::ExpiredToken => actix_web::http::StatusCode::UNAUTHORIZED,
-            AuthError::TokenVerificationFailed => actix_web::http::StatusCode::UNAUTHORIZED,
-            AuthError::InternalError => actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}

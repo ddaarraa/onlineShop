@@ -155,7 +155,7 @@ pub async fn login_user(db: &DbPool, username: &str, password: &str) -> Result<H
                 return Err(ApiError::AuthError { detail: "InvalidPassword".to_string()});
             }
         }
-        Ok(None) => return Err(ApiError::AuthError { detail: "UserNotFound".to_string() }),
-        Err(err) => return Err(ApiError::InternalServerError { detail: err.to_string()}),
+        Ok(None) => Err(ApiError::AuthError { detail: "UserNotFound".to_string() }),
+        Err(err) => Err(ApiError::InternalServerError { detail: err.to_string()}),
     }
 }

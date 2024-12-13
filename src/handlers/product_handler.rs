@@ -30,7 +30,24 @@ pub async fn get_product(db: &DbPool, product_id: i32) -> Result<HttpResponse, A
         Err(err) => {
             return Err(ApiError::DatabaseError { db_err: (err) });
         }
+    }  
+}
+
+pub async fn get_all_products(db: &DbPool) -> Result<HttpResponse, ApiError> {
+    // Fetch all products from the database
+    let products = product::Entity::find()
+        .all(db.as_ref()) // Retrieve all products
+        .await;
+
+    match products {
+        Ok(products) => {
+            if products.is_empty() {
+                return Err(ApiError::ObjectNotFoundError); // Return error if no products found
+            }
+            return Ok(HttpResponse::Ok().json(products)); // Return the list of products
+        }
+        Err(err) => {
+            return Err(ApiError::DatabaseError { db_err: err });
+        }
     }
-    
-    
 }

@@ -3,6 +3,7 @@ use derive_more::Display;
 use sea_orm::DbErr;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use crate::middlewares::error::AuthError;
 
 #[derive(Debug, Display)]
 pub enum ApiError {
@@ -80,6 +81,25 @@ impl error::ResponseError for ApiError {
             ApiError::ObjectNotFoundError => StatusCode::NOT_FOUND,
             ApiError::AuthError { .. } => StatusCode::UNAUTHORIZED,
             ApiError::InternalServerError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl From<AuthError> for ApiError {
+    fn from(auth_error: AuthError) -> Self {
+        match auth_error {
+            AuthError::MissingToken => ApiError::AuthError {
+                detail: "Missing token".to_string(),
+            },
+            AuthError::ExpiredToken => ApiError::AuthError {
+                detail: "Expired token".to_string(),
+            },
+            AuthError::TokenVerificationFailed => ApiError::AuthError {
+                detail: "Failed to verify token".to_string(),
+            },
+            AuthError::InternalError => ApiError::InternalServerError {
+                detail: "Internal error occurred while handling token".to_string(),
+            },
         }
     }
 }
